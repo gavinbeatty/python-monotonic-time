@@ -1,0 +1,13 @@
+project(monotonic_darwin C)
+cmake_minimum_required(VERSION 2.4)
+
+if(APPLE)
+    set(CMAKE_OSX_ARCHITECTURES "i386" "x86_64")
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "10.0")
+    add_library(monotonic_darwin SHARED monotonic_darwin.c)
+endif(APPLE)
+configure_file(monotonic_time.py.in ${CMAKE_SOURCE_DIR}/monotonic_time.py @ONLY)
+configure_file(setup.py.in ${CMAKE_SOURCE_DIR}/setup.py @ONLY)
+
+message(STATUS "Do 'sudo python setup.py install' to install the python module.")
+

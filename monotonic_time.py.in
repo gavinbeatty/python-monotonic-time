@@ -1,0 +1,94 @@
+#/usr/bin/python
+
+"""Copyright 2010 Gavin Beatty <gavinbeatty@gmail.com>
+"""
+
+__author__ = 'Gavin Beatty <gavinbeatty@gmail.com>'
+@VERSION@
+__date__ = 'July 26 2010'
+
+__all__ = [
+  'timespec', 'monotonic_time'
+]
+
+import ctypes
+import os
+import sys
+import errno
+
+class timespec(ctypes.Structure):
+    _fields_ = [
+        ('tv_sec', ctypes.c_long),
+        ('tv_nsec', ctypes.c_long)
+    ]
+    def to_seconds_double(self):
+        return self.tv_sec + self.tv_nsec * 1e-9
+
+monotonic_time__ = None
+loadlib__ = None
+darwin_lib__ = 'libmonotonic_time.dylib'
+librt__ = 'librt.so.1'
+CLOCK_MONOTONIC__ = None
+
+def monotonic_time():
+    global monotonic_time__
+    if monotonic_time__ is None:
+        if sys.platform.startswith("linux"):
+            global CLOCK_MONOTONIC__
+            CLOCK_MONOTONIC__ = 1
+            monotonic_time__ = monotonic_time_unix__
+        elif sys.platform.startswith("freebsd"):
+            global CLOCK_MONOTONIC__
+            CLOCK_MONOTONIC__ = 4
+            monotonic_time__ = monotonic_time_unix__
+        elif sys.platform.startswith("darwin"):
+            monotonic_time__ = monotonic_time_darwin__
+        elif sys.platform.startswith("win32"):
+            monotonic_time__ = monotonic_time_win32__
+        else:
+            raise OSError(errno.ENOSYS, "monotonic_time not supported on your platform.")
+    return monotonic_time__()
+
+def monotonic_time_darwin__():
+    global loadlib__
+    if loadlib__ is None:
+        loadlib__ = ctypes.CDLL(darwin_lib__, use_errno=True)
+    darwin_clock_gettime_MONOTONIC = loadlib__.darwin_clock_gettime_MONOTONIC
+    t = timespec()
+    if darwin_clock_gettime_MONOTONIC(ctypes.pointer(t)) != 0:
+        errno_ = loadlib__.get_errno()
+        raise OSError(errno_, os.strerrno(errno_))
+    return t
+
+def monotonic_time_unix__():
+    global CLOCK_MONOTONIC__
+    global librt__
+    return monotonic_time_unix_base__(librt__, CLOCK_MONOTONIC__)
+
+def monotonic_time_unix_base__(libname, CLOCK_MONOTONIC):
+    global loadlib__
+    if loadlib__ is None:
+        loadlib__ = ctypes.CDLL(libname, use_errno=True)
+    clock_gettime = loadlib__.clock_gettime
+    clock_gettime.argtypes = [ctypes.c_int, ctypes.POINTER(timespec)]
+    t = timespec()
+    if clock_gettime(CLOCK_MONOTONIC, ctypes.pointer(t)) != 0:
+        errno_ = ctypes.get_errno()
+        raise OSError(errno_, os.strerror(errno_))
+    return t
+
+def monotonic_time_win32__():
+    ms = None
+    try:
+        ms = ctypes.windll.kernel32.GetTickCount64()
+    except AttributeError:
+        ms = ctypes.windll.kernel32.GetTickCount()
+    t = timespec()
+    t.tv_sec = ms / 1000
+    t.tv_nsec = (ms - (t.tv_sec * 1000)) * 1e6
+    return t
+
+
+if __name__ == "__main__":
+    print monotonic_time().to_seconds_double()
+
