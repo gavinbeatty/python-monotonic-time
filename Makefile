@@ -1,10 +1,10 @@
 
-all: monotonic_time.py setup.py
+all: build/monotonic_time.py build/setup.py
 .PHONY: all
 
 include common.mk
 
 install:
-	@echo "Do 'sudo python setup.py install' to install python module."
+	@echo "Do '(cd build && sudo python setup.py install ; )' to install python module."
 .PHONY: install
 

@@ -10,17 +10,16 @@ CHMOD = chmod
 PREFIX = /usr/local
 INSTALL_NAME_PREFIX = $(PREFIX)/lib
 
-monotonic_time.py: monotonic_time.py.in
-	@$(SED) -e 's/^@VERSION@/__version__ = '"'$(VERSION)'/" monotonic_time.py.in > monotonic_time.py
-	@$(CHMOD) +x monotonic_time.py
-	@echo 'GEN		monotonic_time.py'
-setup.py: setup.py.in
-	@$(SED) -e 's/^@VERSION@/    version='"'$(VERSION)',/" setup.py.in > setup.py
-	@$(CHMOD) +x setup.py
-	@echo 'GEN		setup.py'
+build/monotonic_time.py: monotonic_time.py.in
+	@$(SED) -e 's/^@VERSION@/__version__ = '"'$(VERSION)'/" monotonic_time.py.in > build/monotonic_time.py
+	@$(CHMOD) +x build/monotonic_time.py
+	@echo 'GEN		build/monotonic_time.py'
+build/setup.py: setup.py.in
+	@$(SED) -e 's/^@VERSION@/    version='"'$(VERSION)',/" setup.py.in > build/setup.py
+	@$(CHMOD) +x build/setup.py
+	@echo 'GEN		build/setup.py'
 
 clean:
-	rm -rf build && mkdir build
-	rm -f monotonic_time.py setup.py
+	rm -rf build && mkdir build && touch build/.file
 .PHONY: clean
 

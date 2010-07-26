@@ -2,7 +2,7 @@
 MACOSX_VERSION_MIN = 10.0
 ARCH_ARGS = -arch i386 -arch x86_64
 
-all: build/libmonotonic_darwin.dylib monotonic_time.py setup.py
+all: build/libmonotonic_darwin.dylib build/monotonic_time.py build/setup.py
 .PHONY: all
 
 include common.mk
@@ -15,6 +15,6 @@ build/monotonic_darwin.c.o: monotonic_darwin.c
 
 install: all
 	$(INSTALL_LIB) build/libmonotonic_darwin.dylib $(INSTALL_NAME_PREFIX)
-	@echo "Do 'sudo python setup.py install' to install the python module."
+	@echo "Do '( cd build && sudo python setup.py install ; )' to install the python module."
 .PHONY: install
 

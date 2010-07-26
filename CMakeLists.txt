@@ -6,8 +6,8 @@ if(APPLE)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "10.0")
     add_library(monotonic_darwin SHARED monotonic_darwin.c)
 endif(APPLE)
-configure_file(monotonic_time.py.in ${CMAKE_SOURCE_DIR}/monotonic_time.py @ONLY)
-configure_file(setup.py.in ${CMAKE_SOURCE_DIR}/setup.py @ONLY)
+configure_file(monotonic_time.py.in ${CMAKE_SOURCE_DIR}/build/monotonic_time.py @ONLY)
+configure_file(setup.py.in ${CMAKE_SOURCE_DIR}/build/setup.py @ONLY)
 
-message(STATUS "Do 'sudo python setup.py install' to install the python module.")
+message(STATUS "Do '(cd build && sudo python setup.py install ; )' to install the python module.")
 
