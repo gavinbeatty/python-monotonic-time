@@ -49,15 +49,13 @@ def monotonic_time(impl=None):
 
 def get_monotonic_time_impl():
     if sys.platform.startswith("linux"):
-        def f(impl=None): return monotonic_time_unix(1, impl=impl)
-        return f
+        return lambda: monotonic_time_unix(1, impl=get_monotonic_time_impl_unix())
     elif sys.platform.startswith("freebsd"):
-        def f(impl=None): return monotonic_time_unix(4, impl=impl)
-        return f
+        return lambda: monotonic_time_unix(4, impl=get_monotonic_time_impl_unix())
     elif sys.platform.startswith("darwin"):
-        return monotonic_time_darwin
+        return lambda: monotonic_time_darwin(impl=get_monotonic_time_impl_darwin())
     elif sys.platform.startswith("win32"):
-        return monotonic_time_win32
+        return monotonic_time_win32(impl=get_monotonic_time_impl_win32())
     else:
         raise OSError(errno.ENOSYS, "monotonic_time not supported on your platform.")
 
