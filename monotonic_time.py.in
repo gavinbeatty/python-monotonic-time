@@ -68,15 +68,14 @@ def monotonic_time_darwin(impl=None):
         impl = get_monotonic_time_impl_darwin()
     t = timespec()
     if impl(ctypes.pointer(t)) != 0:
-        errno_ = loadlib.get_errno()
+        errno_ = ctypes.get_errno()
         raise OSError(errno_, os.strerrno(errno_))
     return t
 
 def get_monotonic_time_impl_unix():
-    lib = ctypes.CDLL('librt.so.1', use_errno=True)
-    func = loadlib.clock_gettime
-    func.argtypes = [ctypes.c_int, ctypes.POINTER(timespec)]
-    return func
+    fxn = ctypes.CDLL('librt.so.1', use_errno=True).clock_gettime
+    fxn.argtypes = [ctypes.c_int, ctypes.POINTER(timespec)]
+    return fxn
 def monotonic_time_unix(clock, impl=None):
     if impl is None:
         impl = get_monotonic_time_impl_unix()
