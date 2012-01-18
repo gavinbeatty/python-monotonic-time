@@ -34,21 +34,19 @@ SOFTWARE.
 
 Install
 -------
-Note: on Mac OS X, all make commands should be `make -f Makefile.darwin`.
-
 Build:
 
     make
-    (cd build && python setup.py build ; )
+    (cd build && python setup.py build)
 
 
 Default prefix is `/usr/local`:
 
     sudo make install
-    (cd build && sudo python setup.py install ; )
+    (cd build && sudo python setup.py install)
 
 
 Select your own prefix:
 
-    make install prefix=~/
-    (cd build && python setup.py --user install ; )
+    make install PREFIX=~/
+    (cd build && python setup.py --user install)
