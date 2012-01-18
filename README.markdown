@@ -2,7 +2,8 @@ python-monotonic-time
 =====================
 Gavin Beatty <gavinbeatty@gmail.com>
 
-python-monotonic-time: a simple module to add monotonic time support to Python. Supported platforms are Linux, FreeBSD, Mac OS X\* and Windows.
+python-monotonic-time: a simple module to add monotonic time support to Python
+>= 2.5. Supported platforms are Linux, FreeBSD, Mac OS X\* and Windows.
 
 \* Mac OS X requires a very small C library to function.
 
