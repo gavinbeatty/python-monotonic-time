@@ -22,7 +22,6 @@ then
 else
 	VN="$DEF_VER"
 fi
-VN=$(expr "$VN" : v*'\(.*\)')
 if test -r "$GVF" ; then
 	VC=$($SED 's/^VERSION = //' < "$GVF")
 else
