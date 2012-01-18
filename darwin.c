@@ -1,17 +1,5 @@
-python-monotonic-time
-=====================
-Gavin Beatty <gavinbeatty@gmail.com>
-
-python-monotonic-time: a simple module to add monotonic time support to Python. Supported platforms are Linux, FreeBSD, Mac OS X\* and Windows.
-
-\* Mac OS X requires a very small C library to function.
-
-
-License
--------
-MIT License
-
-python-monotonic-time Copyright 2010, 2011 Gavin Beatty <gavinbeatty@gmail.com>.
+/**
+Copyright 2010, 2011 Gavin Beatty <gavinbeatty@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -30,25 +18,33 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+*/
+#include <sys/time.h>
 
+#include <mach/clock.h>
+#include <mach/clock_types.h>
+#include <mach/mach_host.h>
+#include <mach/clock.h>
 
-Install
--------
-Note: on Mac OS X, all make commands should be `make -f Makefile.darwin`.
+int darwin_clock_gettime_MONOTONIC(struct timespec *tp)
+{
+    clock_serv_t clock_ref;
+    mach_timespec_t tm;
+    host_name_port_t self = mach_host_self();
+    memset(&tm, 0, sizeof(tm));
+    if (KERN_SUCCESS != host_get_clock_service(self, SYSTEM_CLOCK, &clock_ref))
+    {
+        return -1;
+    }
+    if (KERN_SUCCESS != clock_get_time(clock_ref, &tm))
+    {
+        mach_port_deallocate(mach_task_self(), self);
+        return -1;
+    }
+    mach_port_deallocate(mach_task_self(), self);
+    mach_port_deallocate(mach_task_self(), clock_ref);
+    tp->tv_sec = tm.tv_sec;
+    tp->tv_nsec = tm.tv_nsec;
+    return 0;
+}
 
-Build:
-
-    make
-    (cd build && python setup.py build ; )
-
-
-Default prefix is `/usr/local`:
-
-    sudo make install
-    (cd build && sudo python setup.py install ; )
-
-
-Select your own prefix:
-
-    make install prefix=~/
-    (cd build && python setup.py --user install ; )
