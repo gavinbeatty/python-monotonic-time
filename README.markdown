@@ -49,5 +49,5 @@ Default prefix is `/usr/local`:
 
 Select your own prefix:
 
-    make install PREFIX=~/
+    make install PREFIX=~/.local
     (cd build && python setup.py --user install)
