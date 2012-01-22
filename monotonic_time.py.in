@@ -1,6 +1,11 @@
 #/usr/bin/python
 
-"""Copyright 2010, 2011 Gavin Beatty <gavinbeatty@gmail.com>
+"""Get monotonic time from the OS using the ctypes module.
+
+Only on Mac OS X is a C module required. Other platforms use a Python-only
+implementation.
+
+Copyright 2010, 2011 Gavin Beatty <gavinbeatty@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
