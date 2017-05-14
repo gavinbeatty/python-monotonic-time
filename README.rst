@@ -1,6 +1,5 @@
 python-monotonic-time
 =====================
-Gavin Beatty <gavinbeatty@gmail.com>
 
 python-monotonic-time: monotonic time for Python 2 and 3, on Linux, FreeBSD, Mac OS X, and Windows.
 
@@ -32,4 +31,4 @@ SOFTWARE.
 
 Install
 -------
-The usual `setup.py`.
+The usual ``setup.py``.
