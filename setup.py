@@ -51,5 +51,5 @@ setup(
     url='https://github.com/gavinbeatty/python-monotonic-time',
     # https://packaging.python.org/en/latest/single_source_version.html
     py_modules=['monotonic_time'],
-    keywords='monotonic time clock'
+    keywords='monotonic time clock'.split()
 )
