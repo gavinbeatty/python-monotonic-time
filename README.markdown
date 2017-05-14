@@ -2,17 +2,14 @@ python-monotonic-time
 =====================
 Gavin Beatty <gavinbeatty@gmail.com>
 
-python-monotonic-time: a simple module to add monotonic time support to Python
->= 2.5. Supported platforms are Linux, FreeBSD, Mac OS X\* and Windows.
-
-\* Mac OS X requires a very small C library to function.
+python-monotonic-time: monotonic time for Python 2 and 3, on Linux, FreeBSD, Mac OS X, and Windows.
 
 
 License
 -------
 MIT License
 
-python-monotonic-time Copyright 2010, 2011 Gavin Beatty <gavinbeatty@gmail.com>.
+python-monotonic-time Copyright 2010, 2011, 2017 Gavin Beatty <gavinbeatty@gmail.com>.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -35,19 +32,4 @@ SOFTWARE.
 
 Install
 -------
-Build:
-
-    make
-    (cd build && python setup.py build)
-
-
-Default prefix is `/usr/local`:
-
-    sudo make install
-    (cd build && sudo python setup.py install)
-
-
-Select your own prefix:
-
-    make install PREFIX=~/.local
-    (cd build && python setup.py --user install)
+The usual `setup.py`.
