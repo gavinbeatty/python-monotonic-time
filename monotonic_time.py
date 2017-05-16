@@ -141,7 +141,7 @@ elif sys.platform.startswith('win32'):
         _GetTickCount.restype = ctypes.c_uint32
 
     def monotonic():
-        return _GetTickCount() * 1e3
+        return float(_GetTickCount()) * 1e-3
 else:
     def monotonic():
         msg = 'monotonic not supported on your platform'
