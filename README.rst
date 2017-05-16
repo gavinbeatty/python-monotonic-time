@@ -6,6 +6,9 @@ python-monotonic-time: monotonic time for Python 2 and 3, on Linux, FreeBSD, Mac
 
 Status
 ------
+.. image:: https://travis-ci.org/gavinbeatty/python-monotonic-time.svg?branch=master
+   :target: https://travis-ci.org/gavinbeatty/python-monotonic-time
+
 .. image:: https://ci.appveyor.com/api/projects/status/github/gavinbeatty/python-monotonic-time?svg=true
    :target: https://ci.appveyor.com/project/gavinbeatty/python-monotonic-time
 
