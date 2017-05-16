@@ -31,8 +31,14 @@ __version__ = '2.0.2-dev'
 __date__ = '2017-05-15'
 __all__ = ['monotonic']
 
-import ctypes
-import ctypes.util
+try:
+    import ctypes
+    import ctypes.util
+    _use = 'ctypes'
+except ImportError:
+    import cffi
+    _ffi = cffi.FFI()
+    _use = 'cffi'
 import errno
 import os
 import platform
@@ -108,40 +114,63 @@ elif sys.platform.startswith('freebsd'):
     def monotonic():
         return _timespec_to_seconds(_call_clock_gettime(_clock_gettime, 4))
 elif sys.platform.startswith('darwin') and _machine64 == ('x86_64', True):
-    _mach = _get_ctypes_mach_functions()
+    if _use == 'ctypes':
+        _mach = _get_ctypes_mach_functions()
 
-    def monotonic():
-        self = _mach.get_host()
-        try:
-            clock_ref = ctypes.c_uint(0)
-            if _mach.get_clock(self, 0, ctypes.pointer(clock_ref)) != 0:
-                errno_ = ctypes.get_errno()
-                raise OSError(errno_, os.strerror(errno_))
+        def monotonic():
+            self = _mach.get_host()
             try:
-                timespec = _mach_timespec()
-                if _mach.get_time(clock_ref, ctypes.pointer(timespec)) != 0:
+                clock_ref = ctypes.c_uint(0)
+                if _mach.get_clock(self, 0, ctypes.pointer(clock_ref)) != 0:
                     errno_ = ctypes.get_errno()
                     raise OSError(errno_, os.strerror(errno_))
-                return _timespec_to_seconds(timespec)
+                try:
+                    timespec = _mach_timespec()
+                    if _mach.get_time(clock_ref, ctypes.pointer(timespec)) != 0:
+                        errno_ = ctypes.get_errno()
+                        raise OSError(errno_, os.strerror(errno_))
+                    return _timespec_to_seconds(timespec)
+                finally:
+                    if _mach.deallocate(_mach.get_task(), clock_ref) != 0:
+                        errno_ = ctypes.get_errno()
+                        raise OSError(errno_, os.strerror(errno_))
             finally:
-                if _mach.deallocate(_mach.get_task(), clock_ref) != 0:
+                if _mach.deallocate(_mach.get_task(), self) != 0:
                     errno_ = ctypes.get_errno()
                     raise OSError(errno_, os.strerror(errno_))
-        finally:
-            if _mach.deallocate(_mach.get_task(), self) != 0:
-                errno_ = ctypes.get_errno()
-                raise OSError(errno_, os.strerror(errno_))
-elif sys.platform.startswith('win32'):
-    _GetTickCount = getattr(ctypes.windll.kernel32, 'GetTickCount64', None)
-
-    if _GetTickCount is not None:
-        _GetTickCount.restype = ctypes.c_uint64
+    elif _use == 'cffi':
+        _ffi.cdef('''
+            unsigned int mach_host_self(void);
+        ''')
+        print('XXX', _ffi.mach_host_self())
     else:
-        _GetTickCount = ctypes.windll.kernel32.GetTickCount
-        _GetTickCount.restype = ctypes.c_uint32
+        raise Exception('ctypes or cffi must be supported')
+elif sys.platform.startswith('win32'):
+    if _use == 'ctypes':
+        _GetTickCount = getattr(ctypes.windll.kernel32, 'GetTickCount64', None)
 
-    def monotonic():
-        return float(_GetTickCount()) * 1e-3
+        if _GetTickCount is not None:
+            _GetTickCount.restype = ctypes.c_uint64
+        else:
+            _GetTickCount = ctypes.windll.kernel32.GetTickCount
+            _GetTickCount.restype = ctypes.c_uint32
+
+        def monotonic():
+            return float(_GetTickCount()) * 1e-3
+    elif _use == 'cffi':
+        _ffi.cdef('''
+            unsigned long long WINAPI GetTickCount64(void);
+            unsigned long WINAPI GetTickCount(void);
+        ''')
+        try:
+            _ffi.GetTickCount64()
+            def monotonic():
+                return float(_ffi.GetTickCount64()) * 1e-3
+        except:
+            def monotonic():
+                return float(_ffi.GetTickCount()) * 1e-3
+    else:
+        raise Exception('ctypes or cffi must be supported')
 else:
     def monotonic():
         msg = 'monotonic not supported on your platform'
