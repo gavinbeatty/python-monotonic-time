@@ -4,6 +4,12 @@ python-monotonic-time
 python-monotonic-time: monotonic time for Python 2 and 3, on Linux, FreeBSD, Mac OS X, and Windows.
 
 
+Status
+------
+.. image:: https://ci.appveyor.com/api/projects/status/github/gavinbeatty/python-monotonic-time?svg=true
+   :target: https://ci.appveyor.com/project/gavinbeatty/python-monotonic-time
+
+
 License
 -------
 MIT License
