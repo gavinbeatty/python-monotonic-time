@@ -27,8 +27,8 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 __author__ = 'Gavin Beatty <gavinbeatty@gmail.com>'
-__version__ = '2.0.1'
-__date__ = '2017-05-13'
+__version__ = '2.0.2'
+__date__ = '2017-05-15'
 __all__ = ['monotonic']
 
 import ctypes
