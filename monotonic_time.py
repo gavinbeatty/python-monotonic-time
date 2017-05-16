@@ -31,14 +31,8 @@ __version__ = '2.0.2-dev'
 __date__ = '2017-05-15'
 __all__ = ['monotonic']
 
-try:
-    import ctypes
-    import ctypes.util
-    _use = 'ctypes'
-except ImportError:
-    import cffi
-    _ffi = cffi.FFI()
-    _use = 'cffi'
+import ctypes
+import ctypes.util
 import errno
 import os
 import platform
@@ -138,29 +132,16 @@ elif sys.platform.startswith('darwin') and _machine64 == ('x86_64', True):
                 errno_ = ctypes.get_errno()
                 raise OSError(errno_, os.strerror(errno_))
 elif sys.platform.startswith('win32'):
-    if _use == 'ctypes':
-        _GetTickCount = getattr(ctypes.windll.kernel32, 'GetTickCount64', None)
+    _GetTickCount = getattr(ctypes.windll.kernel32, 'GetTickCount64', None)
 
-        if _GetTickCount is not None:
-            _GetTickCount.restype = ctypes.c_uint64
-        else:
-            _GetTickCount = ctypes.windll.kernel32.GetTickCount
-            _GetTickCount.restype = ctypes.c_uint32
-
-        def monotonic():
-            return float(_GetTickCount()) * 1e-3
+    if _GetTickCount is not None:
+        _GetTickCount.restype = ctypes.c_uint64
     else:
-        _ffi.cdef('''
-            unsigned long long GetTickCount64(void);
-            unsigned long GetTickCount(void);
-        ''')
-        try:
-            _ffi.GetTickCount64()
-            def monotonic():
-                return float(_ffi.GetTickCount64()) * 1e-3
-        except:
-            def monotonic():
-                return float(_ffi.GetTickCount()) * 1e-3
+        _GetTickCount = ctypes.windll.kernel32.GetTickCount
+        _GetTickCount.restype = ctypes.c_uint32
+
+    def monotonic():
+        return float(_GetTickCount()) * 1e-3
 else:
     def monotonic():
         msg = 'monotonic not supported on your platform'
