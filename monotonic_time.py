@@ -134,8 +134,11 @@ elif sys.platform.startswith('darwin') and _machine64 == ('x86_64', True):
 elif sys.platform.startswith('win32'):
     _GetTickCount = getattr(ctypes.windll.kernel32, 'GetTickCount64', None)
 
-    if _GetTickCount is None:
+    if _GetTickCount is not None:
+        _GetTickCount.restype = ctypes.c_uint64
+    else:
         _GetTickCount = ctypes.windll.kernel32.GetTickCount
+        _GetTickCount.restype = ctypes.c_uint32
 
     def monotonic():
         return _GetTickCount() * 1e3
