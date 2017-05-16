@@ -56,7 +56,7 @@ class _posix_timespec(ctypes.Structure):
 
 
 def _timespec_to_seconds(ts):
-    return ts.tv_sec + ts.tv_nsec * 1e-9
+    return float(ts.tv_sec) + float(ts.tv_nsec) * 1e-9
 
 
 def _get_c_mach_functions():
