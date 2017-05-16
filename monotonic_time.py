@@ -27,12 +27,18 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 __author__ = 'Gavin Beatty <gavinbeatty@gmail.com>'
-__version__ = '2.0.2'
+__version__ = '2.0.2-dev'
 __date__ = '2017-05-15'
 __all__ = ['monotonic']
 
-import ctypes
-import ctypes.util
+try:
+    import ctypes
+    import ctypes.util
+    _use = 'ctypes'
+except ImportError:
+    import cffi
+    _ffi = cffi.FFI()
+    _use = 'cffi'
 import errno
 import os
 import platform
@@ -59,7 +65,7 @@ def _timespec_to_seconds(ts):
     return float(ts.tv_sec) + float(ts.tv_nsec) * 1e-9
 
 
-def _get_c_mach_functions():
+def _get_ctypes_mach_functions():
     libcname = ctypes.util.find_library('c')
     libc = ctypes.CDLL(libcname, use_errno=True)
     mach = _NS()
@@ -80,7 +86,7 @@ def _get_c_mach_functions():
     return mach
 
 
-def _get_c_clock_gettime():
+def _get_ctypes_clock_gettime():
     clock_gettime = ctypes.CDLL('librt.so.1', use_errno=True).clock_gettime
     clock_gettime.argtypes = [ctypes.c_int, ctypes.POINTER(_posix_timespec)]
     return clock_gettime
@@ -98,17 +104,17 @@ _py_monotonic = getattr(time, 'monotonic', None)
 if _py_monotonic is not None:
     monotonic = _py_monotonic
 elif sys.platform.startswith('linux'):
-    _clock_gettime = _get_c_clock_gettime()
+    _clock_gettime = _get_ctypes_clock_gettime()
 
     def monotonic():
         return _timespec_to_seconds(_call_clock_gettime(_clock_gettime, 1))
 elif sys.platform.startswith('freebsd'):
-    _clock_gettime = _get_c_clock_gettime()
+    _clock_gettime = _get_ctypes_clock_gettime()
 
     def monotonic():
         return _timespec_to_seconds(_call_clock_gettime(_clock_gettime, 4))
 elif sys.platform.startswith('darwin') and _machine64 == ('x86_64', True):
-    _mach = _get_c_mach_functions()
+    _mach = _get_ctypes_mach_functions()
 
     def monotonic():
         self = _mach.get_host()
@@ -132,16 +138,29 @@ elif sys.platform.startswith('darwin') and _machine64 == ('x86_64', True):
                 errno_ = ctypes.get_errno()
                 raise OSError(errno_, os.strerror(errno_))
 elif sys.platform.startswith('win32'):
-    _GetTickCount = getattr(ctypes.windll.kernel32, 'GetTickCount64', None)
+    if _use == 'ctypes':
+        _GetTickCount = getattr(ctypes.windll.kernel32, 'GetTickCount64', None)
 
-    if _GetTickCount is not None:
-        _GetTickCount.restype = ctypes.c_uint64
+        if _GetTickCount is not None:
+            _GetTickCount.restype = ctypes.c_uint64
+        else:
+            _GetTickCount = ctypes.windll.kernel32.GetTickCount
+            _GetTickCount.restype = ctypes.c_uint32
+
+        def monotonic():
+            return float(_GetTickCount()) * 1e-3
     else:
-        _GetTickCount = ctypes.windll.kernel32.GetTickCount
-        _GetTickCount.restype = ctypes.c_uint32
-
-    def monotonic():
-        return float(_GetTickCount()) * 1e-3
+        _ffi.cdef('''
+            unsigned long long GetTickCount64(void);
+            unsigned long GetTickCount(void);
+        ''')
+        try:
+            _ffi.GetTickCount64()
+            def monotonic():
+                return float(_ffi.GetTickCount64()) * 1e-3
+        except:
+            def monotonic():
+                return float(_ffi.GetTickCount()) * 1e-3
 else:
     def monotonic():
         msg = 'monotonic not supported on your platform'
