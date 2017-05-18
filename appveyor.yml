@@ -11,18 +11,23 @@ environment:
     - PYTHON: "C:\\Python34-x64"
     - PYTHON: "C:\\Python35-x64"
     - PYTHON: "C:\\Python36-x64"
+    - PYTHON: "pypy"
 
 install:
-  - "%PYTHON%\\python.exe -m pip install wheel"
-  - "%PYTHON%\\python.exe -m pip install pytest"
+  - if "%PYTHON%" == "pypy" choco install python.pypy
+  - if "%PYTHON%" == "pypy" C:\tools\pypy\pypy -m ensurepip
+  - if "%PYTHON%" == "pypy" C:\tools\pypy\pypy -m pip install wheel pytest
+  - if "%PYTHON%" != "pypy" %PYTHON%\python.exe -m pip install wheel pytest
 
 build: off
 
 test_script:
-  - "%PYTHON%\\python.exe -m pytest"
+  - if "%PYTHON%" == "pypy" C:\tools\pypy\pypy -m pytest
+  - if "%PYTHON%" != "pypy" %PYTHON%\python.exe -m pytest
 
 after_test:
-  - "%PYTHON%\\python.exe setup.py bdist_wheel"
+  - if "%PYTHON%" == "pypy" C:\tools\pypy\pypy setup.py bdist_wheel
+  - if "%PYTHON%" != "pypy" %PYTHON%\python.exe setup.py bdist_wheel
 
 artifacts:
   - path: dist\*
