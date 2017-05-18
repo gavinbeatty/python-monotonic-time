@@ -17,17 +17,17 @@ install:
   - if "%PYTHON%" == "pypy" choco install python.pypy
   - if "%PYTHON%" == "pypy" C:\tools\pypy\pypy -m ensurepip
   - if "%PYTHON%" == "pypy" C:\tools\pypy\pypy -m pip install wheel pytest
-  - if "%PYTHON%" != "pypy" %PYTHON%\python.exe -m pip install wheel pytest
+  - if "%PYTHON%" NEQ "pypy" %PYTHON%\python.exe -m pip install wheel pytest
 
 build: off
 
 test_script:
   - if "%PYTHON%" == "pypy" C:\tools\pypy\pypy -m pytest
-  - if "%PYTHON%" != "pypy" %PYTHON%\python.exe -m pytest
+  - if "%PYTHON%" NEQ "pypy" %PYTHON%\python.exe -m pytest
 
 after_test:
   - if "%PYTHON%" == "pypy" C:\tools\pypy\pypy setup.py bdist_wheel
-  - if "%PYTHON%" != "pypy" %PYTHON%\python.exe setup.py bdist_wheel
+  - if "%PYTHON%" NEQ "pypy" %PYTHON%\python.exe setup.py bdist_wheel
 
 artifacts:
   - path: dist\*
