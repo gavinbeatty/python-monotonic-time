@@ -13,4 +13,5 @@ python:
   - "nightly"
   - "pypy"
   - "pypy3"
+install:
 script: "python -m pytest"
