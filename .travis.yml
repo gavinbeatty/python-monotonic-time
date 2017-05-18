@@ -13,4 +13,4 @@ python:
   - "nightly"
   - "pypy"
   - "pypy3"
-script: "pytest"
+script: "python -m pytest"
