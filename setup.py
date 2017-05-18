@@ -36,6 +36,10 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
 
+need_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv[1:])
+pytest_runner = ['pytest-runner>=2,<3'] if need_pytest else []
+
+
 setup(
     name='monotonic_time',
     version=monotonic_time.__version__,
@@ -50,5 +54,7 @@ setup(
     classifiers=filter(None, classifiers.split('\n')),
     url='https://github.com/gavinbeatty/python-monotonic-time',
     py_modules=['monotonic_time'],
-    keywords=['monotonic', 'time', 'clock']
+    keywords=['monotonic', 'time', 'clock'],
+    setup_requires=pytest_runner,
+    tests_require=['pytest']
 )
