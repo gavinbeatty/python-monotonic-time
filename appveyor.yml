@@ -1,32 +1,32 @@
 environment:
   matrix:
     # http://www.appveyor.com/docs/installed-software#python
-    - PYTHON: "C:\\Python27"
-    - PYTHON: "C:\\Python33"
-    - PYTHON: "C:\\Python34"
-    - PYTHON: "C:\\Python35"
-    - PYTHON: "C:\\Python36"
-    - PYTHON: "C:\\Python27-x64"
-    - PYTHON: "C:\\Python33-x64"
-    - PYTHON: "C:\\Python34-x64"
-    - PYTHON: "C:\\Python35-x64"
+    #    - PYTHON: "C:\\Python27"
+    #    - PYTHON: "C:\\Python33"
+    #    - PYTHON: "C:\\Python34"
+    #    - PYTHON: "C:\\Python35"
+    #    - PYTHON: "C:\\Python36"
+    #    - PYTHON: "C:\\Python27-x64"
+    #    - PYTHON: "C:\\Python33-x64"
+    #    - PYTHON: "C:\\Python34-x64"
+    #    - PYTHON: "C:\\Python35-x64"
     - PYTHON: "C:\\Python36-x64"
     - PYTHON: "pypy"
 
 install:
   - if "%PYTHON%" == "pypy" choco install python.pypy
-  - if "%PYTHON%" == "pypy" C:\tools\pypy\pypy -m ensurepip
-  - if "%PYTHON%" == "pypy" C:\tools\pypy\pypy -m pip install wheel pytest
+  - if "%PYTHON%" == "pypy" %ChocolateyInstall%\bin\pypy -m ensurepip
+  - if "%PYTHON%" == "pypy" %ChocolateyInstall%\bin\pypy -m pip install wheel pytest
   - if "%PYTHON%" NEQ "pypy" %PYTHON%\python.exe -m pip install wheel pytest
 
 build: off
 
 test_script:
-  - if "%PYTHON%" == "pypy" C:\tools\pypy\pypy -m pytest
+  - if "%PYTHON%" == "pypy" %ChocolateyInstall%\bin\pypy -m pytest
   - if "%PYTHON%" NEQ "pypy" %PYTHON%\python.exe -m pytest
 
 after_test:
-  - if "%PYTHON%" == "pypy" C:\tools\pypy\pypy setup.py bdist_wheel
+  - if "%PYTHON%" == "pypy" %ChocolateyInstall%\bin\pypy setup.py bdist_wheel
   - if "%PYTHON%" NEQ "pypy" %PYTHON%\python.exe setup.py bdist_wheel
 
 artifacts:
