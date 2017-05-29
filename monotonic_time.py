@@ -31,6 +31,7 @@ __version__ = '2.0.2.dev0'
 __date__ = '2017-05-15'
 __all__ = ['monotonic']
 
+import contextlib
 import ctypes
 import errno
 import os
@@ -57,7 +58,7 @@ def _timespec_to_seconds(ts):
     return float(ts.tv_sec) + float(ts.tv_nsec) * 1e-9
 
 
-def _get_ctypes_macho_functions():
+def _get_ctypes_libmacho_macho_functions():
     libmacho = ctypes.CDLL('/usr/lib/system/libmacho.dylib', use_errno=True)
     macho = _NS()
     macho.get_host = libmacho.mach_host_self
@@ -70,11 +71,9 @@ def _get_ctypes_macho_functions():
                                 ]
     macho.get_time = libmacho.clock_get_time
     macho.get_time.argtypes = [ctypes.c_uint, ctypes.POINTER(_mach_timespec)]
-    macho.get_task = libmacho.mach_task_self
-    macho.get_task.restype = ctypes.c_uint
     macho.deallocate = libmacho.mach_port_deallocate
     macho.deallocate.argtypes = [ctypes.c_uint, ctypes.c_uint]
-    return macho
+    return libmacho, macho
 
 
 def _get_ctypes_clock_gettime(library):
@@ -110,34 +109,35 @@ elif sys.platform.startswith('freebsd'):
         timespec = _call_ctypes_clock_gettime(_clock_gettime, clockid)
         return _timespec_to_seconds(timespec)
 elif sys.platform.startswith('darwin') and _machine64 == ('x86_64', True):
-    _macho = _get_ctypes_macho_functions()
+    _libmacho, _macho = _get_ctypes_libmacho_macho_functions()
+
+    @contextlib.contextmanager
+    def _deallocate(task, port):
+        try:
+            yield
+        finally:
+            if int(_macho.deallocate(task, port)) == 0:
+                return
+            errno_ = ctypes.get_errno()
+            raise OSError(errno_, os.strerror(errno_))
 
     def monotonic():
-        self = _macho.get_host()
-        try:
+        task = ctypes.c_uint.in_dll(_libmacho, 'mach_task_self_')
+        host = _macho.get_host()
+        with _deallocate(task, host):
             clock = ctypes.c_uint(0)
             clockid = ctypes.c_int(0)
-            ret = _macho.get_clock(self, clockid, ctypes.pointer(clock))
+            ret = _macho.get_clock(host, clockid, ctypes.pointer(clock))
             if int(ret) != 0:
                 errno_ = ctypes.get_errno()
                 raise OSError(errno_, os.strerror(errno_))
-            try:
+            with _deallocate(task, clock):
                 timespec = _mach_timespec()
                 ret = _macho.get_time(clock, ctypes.pointer(timespec))
                 if int(ret) != 0:
                     errno_ = ctypes.get_errno()
                     raise OSError(errno_, os.strerror(errno_))
                 return _timespec_to_seconds(timespec)
-            finally:
-                ret = _macho.deallocate(_macho.get_task(), clock)
-                if int(ret) != 0:
-                    errno_ = ctypes.get_errno()
-                    raise OSError(errno_, os.strerror(errno_))
-        finally:
-            ret = _macho.deallocate(_macho.get_task(), self)
-            if int(ret) != 0:
-                errno_ = ctypes.get_errno()
-                raise OSError(errno_, os.strerror(errno_))
 elif sys.platform.startswith('win32'):
     _GetTickCount = getattr(ctypes.windll.kernel32, 'GetTickCount64', None)
 
