@@ -31,31 +31,26 @@ __version__ = '2.0.2.dev0'
 __date__ = '2017-05-15'
 __all__ = ['monotonic']
 
-try:
-    import ctypes
-    _use = 'ctypes'
-
-    class _mach_timespec(ctypes.Structure):
-        _fields_ = [('tv_sec', ctypes.c_uint), ('tv_nsec', ctypes.c_int)]
-
-    class _posix_timespec(ctypes.Structure):
-        _fields_ = [('tv_sec', ctypes.c_long), ('tv_nsec', ctypes.c_long)]
-except ImportError:
-    import cffi
-    _ffi = cffi.FFI()
-    _use = 'cffi'
+import ctypes
 import errno
 import os
 import platform
 import sys
 import time
 
-
 _machine64 = (platform.machine(), sys.maxsize > 2**32)
 
 
 class _NS():
     pass
+
+
+class _mach_timespec(ctypes.Structure):
+    _fields_ = [('tv_sec', ctypes.c_uint), ('tv_nsec', ctypes.c_int)]
+
+
+class _posix_timespec(ctypes.Structure):
+    _fields_ = [('tv_sec', ctypes.c_long), ('tv_nsec', ctypes.c_long)]
 
 
 def _timespec_to_seconds(ts):
@@ -97,160 +92,63 @@ def _call_ctypes_clock_gettime(clock_gettime, clockid):
     return timespec
 
 
-def _call_cffi_clock_gettime(ffi, clock_gettime, clockid):
-    timespecptr = ffi.new('struct posix_timespec *')
-    ret = clock_gettime(clockid, timespecptr)
-    if int(ret) != 0:
-        errno_ = int(ffi.errno)
-        raise OSError(errno_, os.strerror(errno_))
-    return timespecptr
-
-
 _py_monotonic = getattr(time, 'monotonic', None)
 if _py_monotonic is not None:
     monotonic = _py_monotonic
 elif sys.platform.startswith('linux'):
-    if _use == 'ctypes':
-        _clock_gettime = _get_ctypes_clock_gettime('librt.so.1')
+    _clock_gettime = _get_ctypes_clock_gettime('librt.so.1')
 
-        def monotonic():
-            clockid = ctypes.c_int(1)
-            timespec = _call_ctypes_clock_gettime(_clock_gettime, clockid)
-            return _timespec_to_seconds(timespec)
-    elif _use == 'cffi':
-        _ffi.cdef('''
-            struct posix_timespec { long tv_sec; long tv_nsec; };
-            int clock_gettime(int, struct posix_timespec *);
-        ''')
-        _rt = _ffi.dlopen('librt.so.1')
-
-        def monotonic():
-            clockid = _ffi.cast('int', 4)
-            clock_gettime = _rt.clock_gettime
-            timespec = _call_cffi_clock_gettime(_ffi, clock_gettime, clockid)
-            return _timespec_to_seconds(timespec)
-    else:
-        raise RuntimeError('ctypes or cffi must be supported')
+    def monotonic():
+        clockid = ctypes.c_int(1)
+        timespec = _call_ctypes_clock_gettime(_clock_gettime, clockid)
+        return _timespec_to_seconds(timespec)
 elif sys.platform.startswith('freebsd'):
-    if _use == 'ctypes':
-        _clock_gettime = _get_ctypes_clock_gettime('libc.so')
+    _clock_gettime = _get_ctypes_clock_gettime('libc.so')
 
-        def monotonic():
-            clockid = ctypes.c_int(4)
-            timespec = _call_ctypes_clock_gettime(_clock_gettime, clockid)
-            return _timespec_to_seconds(timespec)
-    elif _use == 'cffi':
-        _ffi.cdef('''
-            struct posix_timespec { long tv_sec; long tv_nsec; };
-            int clock_gettime(int, struct posix_timespec *);
-        ''')
-        _rt = _ffi.dlopen('libc.so')
-
-        def monotonic():
-            clockid = _ffi.cast('int', 4)
-            clock_gettime = _rt.clock_gettime
-            timespec = _call_cffi_clock_gettime(_ffi, clock_gettime, clockid)
-            return _timespec_to_seconds(timespec)
-    else:
-        raise RuntimeError('ctypes or cffi must be supported')
+    def monotonic():
+        clockid = ctypes.c_int(4)
+        timespec = _call_ctypes_clock_gettime(_clock_gettime, clockid)
+        return _timespec_to_seconds(timespec)
 elif sys.platform.startswith('darwin') and _machine64 == ('x86_64', True):
-    if _use == 'ctypes':
-        _macho = _get_ctypes_macho_functions()
+    _macho = _get_ctypes_macho_functions()
 
-        def monotonic():
-            self = _macho.get_host()
-            try:
-                clock = ctypes.c_uint(0)
-                clockid = ctypes.c_int(0)
-                ret = _macho.get_clock(self, clockid, ctypes.pointer(clock))
-                if int(ret) != 0:
-                    errno_ = ctypes.get_errno()
-                    raise OSError(errno_, os.strerror(errno_))
-                try:
-                    timespec = _mach_timespec()
-                    ret = _macho.get_time(clock, ctypes.pointer(timespec))
-                    if int(ret) != 0:
-                        errno_ = ctypes.get_errno()
-                        raise OSError(errno_, os.strerror(errno_))
-                    return _timespec_to_seconds(timespec)
-                finally:
-                    ret = _macho.deallocate(_macho.get_task(), clock)
-                    if int(ret) != 0:
-                        errno_ = ctypes.get_errno()
-                        raise OSError(errno_, os.strerror(errno_))
-            finally:
-                ret = _macho.deallocate(_macho.get_task(), self)
-                if int(ret) != 0:
-                    errno_ = ctypes.get_errno()
-                    raise OSError(errno_, os.strerror(errno_))
-    elif _use == 'cffi':
-        _ffi.cdef('''
-            struct mach_timespec { unsigned tv_sec; int tv_nsec; };
-            extern unsigned mach_task_self_;
-            unsigned int mach_host_self(void);
-            int host_get_clock_service(unsigned, int, unsigned *);
-            int clock_get_time(unsigned, struct mach_timespec *);
-            int mach_port_deallocate(unsigned, unsigned);
-        ''')
-        _macho = _ffi.dlopen('/usr/lib/system/libmacho.dylib')
-
-        def monotonic():
-            taskptr = _ffi.addressof(_macho, 'mach_task_self_')
-            host = _macho.mach_host_self()
-            try:
-                clockptr = _ffi.new('unsigned *')
-                clockid = _ffi.cast('int', 0)
-                ret = _macho.host_get_clock_service(host, clockid, clockptr)
-                if int(ret) != 0:
-                    errno_ = int(_ffi.errno)
-                    raise OSError(errno_, os.strerror(errno_))
-                try:
-                    timespecptr = _ffi.new('struct mach_timespec *')
-                    ret = _macho.clock_get_time(clockptr[0], timespecptr)
-                    if int(ret) != 0:
-                        errno_ = int(_ffi.errno)
-                        raise OSError(errno_, os.strerror(errno_))
-                    return _timespec_to_seconds(timespecptr)
-                finally:
-                    ret = _macho.mach_port_deallocate(taskptr[0], clockptr[0])
-                    if int(ret) != 0:
-                        errno_ = int(_ffi.errno)
-                        raise OSError(errno_, os.strerror(errno_))
-            finally:
-                ret = _macho.mach_port_deallocate(taskptr[0], host)
-                if int(ret) != 0:
-                    errno_ = int(_ffi.errno)
-                    raise OSError(errno_, os.strerror(errno_))
-    else:
-        raise RuntimeError('ctypes or cffi must be supported')
-elif sys.platform.startswith('win32'):
-    if _use == 'ctypes':
-        _GetTickCount = getattr(ctypes.windll.kernel32, 'GetTickCount64', None)
-
-        if _GetTickCount is not None:
-            _GetTickCount.restype = ctypes.c_uint64
-        else:
-            _GetTickCount = ctypes.windll.kernel32.GetTickCount
-            _GetTickCount.restype = ctypes.c_uint32
-
-        def monotonic():
-            return float(_GetTickCount()) * 1e-3
-    elif _use == 'cffi':
-        _ffi.cdef('''
-            unsigned long long WINAPI GetTickCount64(void);
-            unsigned long WINAPI GetTickCount(void);
-        ''')
-        _kernel32 = _ffi.dlopen('kernel32.dll')
+    def monotonic():
+        self = _macho.get_host()
         try:
-            _kernel32.GetTickCount64()
+            clock = ctypes.c_uint(0)
+            clockid = ctypes.c_int(0)
+            ret = _macho.get_clock(self, clockid, ctypes.pointer(clock))
+            if int(ret) != 0:
+                errno_ = ctypes.get_errno()
+                raise OSError(errno_, os.strerror(errno_))
+            try:
+                timespec = _mach_timespec()
+                ret = _macho.get_time(clock, ctypes.pointer(timespec))
+                if int(ret) != 0:
+                    errno_ = ctypes.get_errno()
+                    raise OSError(errno_, os.strerror(errno_))
+                return _timespec_to_seconds(timespec)
+            finally:
+                ret = _macho.deallocate(_macho.get_task(), clock)
+                if int(ret) != 0:
+                    errno_ = ctypes.get_errno()
+                    raise OSError(errno_, os.strerror(errno_))
+        finally:
+            ret = _macho.deallocate(_macho.get_task(), self)
+            if int(ret) != 0:
+                errno_ = ctypes.get_errno()
+                raise OSError(errno_, os.strerror(errno_))
+elif sys.platform.startswith('win32'):
+    _GetTickCount = getattr(ctypes.windll.kernel32, 'GetTickCount64', None)
 
-            def monotonic():
-                return float(_kernel32.GetTickCount64()) * 1e-3
-        except:
-            def monotonic():
-                return float(_kernel32.GetTickCount()) * 1e-3
+    if _GetTickCount is not None:
+        _GetTickCount.restype = ctypes.c_uint64
     else:
-        raise RuntimeError('ctypes or cffi must be supported')
+        _GetTickCount = ctypes.windll.kernel32.GetTickCount
+        _GetTickCount.restype = ctypes.c_uint32
+
+    def monotonic():
+        return float(_GetTickCount()) * 1e-3
 else:
     def monotonic():
         msg = 'monotonic not supported on your platform'
