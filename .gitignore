@@ -1,7 +1,3 @@
 *.pyc
-/.tox/
-/build/
+__pycache__/
 /dist/
-/*.egg-info/
-/.eggs/
-/.cache/

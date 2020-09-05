@@ -1,8 +1,8 @@
 # vi: set ft=python sw=4 ts=4 et:
 
-'''monotonic time for Python 2 and 3, on Linux, FreeBSD, Mac OS X, and Windows.
+'''monotonic time for Python 2 and 3, on Linux, OpenBSD, FreeBSD, macOS x86_64, and Windows.
 
-Copyright 2010, 2011, 2017 Gavin Beatty <gavinbeatty@gmail.com>
+Copyright 2010, 2011, 2017, 2020 Gavin Beatty <pubilc@gavinbeatty.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -99,6 +99,13 @@ elif sys.platform.startswith('linux'):
 
     def monotonic():
         clockid = ctypes.c_int(1)
+        timespec = _call_ctypes_clock_gettime(_clock_gettime, clockid)
+        return _timespec_to_seconds(timespec)
+elif sys.platform.startswith('openbsd'):
+    _clock_gettime = _get_ctypes_clock_gettime('libc.so')
+
+    def monotonic():
+        clockid = ctypes.c_int(3)
         timespec = _call_ctypes_clock_gettime(_clock_gettime, clockid)
         return _timespec_to_seconds(timespec)
 elif sys.platform.startswith('freebsd'):
