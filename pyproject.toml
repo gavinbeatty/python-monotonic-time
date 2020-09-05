@@ -6,6 +6,7 @@ readme = "README.rst"
 description = "monotonic time for Python 2 and 3, on Linux, OpenBSD, FreeBSD, macOS x86_64, and Windows."
 authors = ["Gavin Beatty <public@gavinbeatty.com>"]
 repository = "https://github.com/gavinbeatty/python-monotonic-time"
+exclude = ["test_*.py"]
 classifiers = [
     "Natural Language :: English",
     "Development Status :: 4 - Beta",
